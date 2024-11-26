@@ -1,18 +1,8 @@
-import express from "express";
 import dotenv from "dotenv";
 import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
 import { SlashCommandBuilder } from "@discordjs/builders";
 
 dotenv.config();
-const app = express();
-
-app.listen(3000, () => {
-  console.log("Project is Running");
-});
-
-app.get("/", (req, res) => {
-  res.send("Hello World");
-});
 
 const client = new Client({
   intents: [
@@ -58,9 +48,7 @@ client.on("interactionCreate", async (interaction) => {
     // Send ephemeral message
     const message = interaction.options.getString("message");
 
-    const channelID = "1310896453836865639";
-
-    const channel = client.channels.cache.get(channelID);
+    const channel = client.channels.cache.get(process.env.CHANNEL_ID);
     if (channel) {
       // Send the message to the specified channel
       channel.send({ content: message });
