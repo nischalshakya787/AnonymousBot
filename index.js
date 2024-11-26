@@ -1,14 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
-import {
-  Client,
-  GatewayIntentBits,
-  REST,
-  Routes,
-  Collection,
-} from "discord.js";
+import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
 import { SlashCommandBuilder } from "@discordjs/builders";
-import fs from "fs";
 
 dotenv.config();
 const app = express();
@@ -29,30 +22,18 @@ const client = new Client({
   ],
 });
 const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
-client.commands = new Collection();
-
-const prefix = "!";
-
-const commands = fs
-  .readdirSync("./commands")
-  .filter((file) => file.endsWith(".js"));
-
-for (const file of commands) {
-  const commandName = file.split(".")[0];
-  import(`./commands/${commandName}.js`)
-    .then((command) => {
-      client.commands.set(commandName, command);
-    })
-    .catch((err) => {
-      console.error(`Error loading command ${commandName}:`, err);
-    });
-}
 
 client.once("ready", async () => {
   const commands = [
     new SlashCommandBuilder()
-      .setName("secret")
-      .setDescription("Sends a secret message to you")
+      .setName("complain")
+      .setDescription("Sends Complain to the Class Representatives")
+      .addStringOption((option) =>
+        option
+          .setName("message")
+          .setDescription("Complain to Send")
+          .setRequired(true)
+      )
       .toJSON(),
   ];
 
@@ -70,34 +51,27 @@ client.once("ready", async () => {
   }
 });
 
-client.on("messageCreate", (message) => {
-  if (message.content.startsWith(prefix)) {
-    const args = message.content.slice(prefix.length).trim().split(/ +/g);
-    const commandName = args.shift();
-    const command = client.commands.get(commandName);
-
-    if (!command) {
-      return message.channel.send({ content: "That command doesn't exist" });
-    }
-
-    // Execute the command
-    try {
-      command.run(client, message, args);
-    } catch (err) {
-      console.error("Error executing command:", err);
-      message.channel.send({
-        content: "There was an error executing that command.",
-      });
-    }
-  }
-});
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
 
-  if (interaction.commandName === "secret") {
+  if (interaction.commandName === "complain") {
     // Send ephemeral message
+    const message = interaction.options.getString("message");
+
+    const channelID = "1310896453836865639";
+
+    const channel = client.channels.cache.get(channelID);
+    if (channel) {
+      // Send the message to the specified channel
+      channel.send({ content: message });
+    } else {
+      message.channel.send({
+        content: "Could not find the specified channel!",
+      });
+    }
+
     await interaction.reply({
-      content: "This message is visible only to you!",
+      content: "Complaints sent successfully to Class Representatives!",
       ephemeral: true,
     });
   }
