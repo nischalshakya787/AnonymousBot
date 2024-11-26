@@ -1,6 +1,13 @@
 import express from "express";
 import dotenv from "dotenv";
-import { Client, GatewayIntentBits, Collection } from "discord.js";
+import {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  Collection,
+} from "discord.js";
+import { SlashCommandBuilder } from "@discordjs/builders";
 import fs from "fs";
 
 dotenv.config();
@@ -21,6 +28,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
   ],
 });
+const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
 client.commands = new Collection();
 
 const prefix = "!";
@@ -40,8 +48,26 @@ for (const file of commands) {
     });
 }
 
-client.once("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
+client.once("ready", async () => {
+  const commands = [
+    new SlashCommandBuilder()
+      .setName("secret")
+      .setDescription("Sends a secret message to you")
+      .toJSON(),
+  ];
+
+  try {
+    await rest.put(
+      Routes.applicationGuildCommands(
+        process.env.CLIENT_ID,
+        process.env.GUILD_ID
+      ),
+      { body: commands }
+    );
+    console.log("Successfully registered commands.");
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 client.on("messageCreate", (message) => {
@@ -63,6 +89,17 @@ client.on("messageCreate", (message) => {
         content: "There was an error executing that command.",
       });
     }
+  }
+});
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isCommand()) return;
+
+  if (interaction.commandName === "secret") {
+    // Send ephemeral message
+    await interaction.reply({
+      content: "This message is visible only to you!",
+      ephemeral: true,
+    });
   }
 });
 
